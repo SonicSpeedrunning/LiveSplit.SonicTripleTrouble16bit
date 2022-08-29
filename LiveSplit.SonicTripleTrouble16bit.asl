@@ -1,7 +1,7 @@
 // Sonic Triple Trouble 16-Bit
 // Autosplitter
 // Coding: Jujstme
-// Version 1.0.0 (Aug 7th, 2022)
+// Version 1.0.1 (Aug 29th, 2022)
 
 state ("Sonic Triple Trouble 16-Bit") {}
 
@@ -65,11 +65,19 @@ init
     var scanner = new SignatureScanner(game, modules.First().BaseAddress, modules.First().ModuleMemorySize);
     Action checkptr = () => { if (ptr == IntPtr.Zero) throw new Exception("Sigscanning failed!"); };
 
-    ptr = scanner.Scan(new SigScanTarget(6, "4D 0F 45 F5 8B 0D") { OnFound = (p, s, addr) => addr + 0x4 + p.ReadValue<int>(addr) }); checkptr();
-    vars.watchers.Add(new MemoryWatcher<int>(ptr) { Name = "RoomID" });
+    switch (game.Is64Bit())
+    {
+        case true:
+            ptr = scanner.Scan(new SigScanTarget(6, "4D 0F 45 F5 8B 0D") { OnFound = (p, s, addr) => addr + 0x4 + p.ReadValue<int>(addr) });
+            checkptr();
+            break;
+        default:
+            ptr = scanner.Scan(new SigScanTarget(2, "8B 0D ???????? 83 C4 04 3B 0D") { OnFound = (p, s, addr) => p.ReadPointer(addr) });
+            checkptr();
+            break;
+    }
 
-    //ptr = scanner.Scan(new SigScanTarget(8, "48 8B 7C 24 20 48 89 35 ???????? 48 89 35") { OnFound = (p, s, addr) => addr + 0x4 + p.ReadValue<int>(addr) });
-    //vars.watchers.Add(new MemoryWatcher<double>(new DeepPointer(ptr, 0x48, 0x10, 0x340, 0x850)) { Name = "ChaosEmeralds" });
+    vars.watchers.Add(new MemoryWatcher<int>(ptr) { Name = "RoomID" });
 
     // Defining variables used later in the script
     current.Act = 19;
