@@ -1,7 +1,7 @@
 // Sonic Triple Trouble 16-Bit
 // Autosplitter
 // Coding: Jujstme
-// Version 1.0.2 (Oct 19th, 2022)
+// Version 1.0.3 (Oct 19th, 2022)
 
 state ("Sonic Triple Trouble 16-Bit") {}
 
@@ -61,25 +61,23 @@ startup
 
 init
 {
-    // Inizialize the main watchers and the variables we need for sigscanning
-    vars.watchers = new MemoryWatcherList();
+    // Inizialize the variables we need for sigscanning
     var ptr = IntPtr.Zero;
     var scanner = new SignatureScanner(game, modules.First().BaseAddress, modules.First().ModuleMemorySize);
-    Action checkptr = () => { if (ptr == IntPtr.Zero) throw new Exception("Sigscanning failed!"); };
+
+    Action<int, string> scan = (o, sig) =>
+    {
+        ptr = scanner.Scan(new SigScanTarget(o, sig) { OnFound = (p, s, addr) => p.Is64Bit() ? addr + 0x4 + p.ReadValue<int>(addr) : p.ReadPointer(addr) });
+        if (ptr == IntPtr.Zero) throw new NullReferenceException("Sigscanning failed!");
+    };
 
     switch (game.Is64Bit())
     {
-        case true:
-            ptr = scanner.Scan(new SigScanTarget(6, "4D 0F 45 F5 8B 0D") { OnFound = (p, s, addr) => addr + 0x4 + p.ReadValue<int>(addr) });
-            checkptr();
-            break;
-        default:
-            ptr = scanner.Scan(new SigScanTarget(2, "8B 0D ???????? 83 C4 04 3B 0D") { OnFound = (p, s, addr) => p.ReadPointer(addr) });
-            checkptr();
-            break;
+        case true: scan(6, "4D 0F 45 F5 8B 0D");             break;
+        default:   scan(2, "8B 0D ???????? 83 C4 04 3B 0D"); break;
     }
 
-    vars.watchers.Add(new MemoryWatcher<int>(ptr) { Name = "RoomID" });
+    vars.RoomID = new MemoryWatcher<int>(ptr);
 
     // Defining variables used later in the script
     current.Act = 19;
@@ -87,13 +85,13 @@ init
 
 update
 {
-    vars.watchers.UpdateAll(game);
-    if (vars.Acts.ContainsKey(vars.watchers["RoomID"].Current)) current.Act = vars.Acts[vars.watchers["RoomID"].Current];
+    vars.RoomID.Update(game);
+    if (vars.Acts.ContainsKey(vars.RoomID.Current)) current.Act = vars.Acts[vars.RoomID.Current];
 }
 
 start
 {
-    return vars.watchers["RoomID"].Old == 10 && vars.watchers["RoomID"].Current == 12;
+    return vars.RoomID.Old == 10 && vars.RoomID.Current == 12;
 }
 
 split
@@ -112,5 +110,5 @@ split
 
 reset
 {
-    return vars.watchers["RoomID"].Old == 10 && vars.watchers["RoomID"].Current == 12;
+    return vars.RoomID.Old == 10 && vars.RoomID.Current == 12;
 }
