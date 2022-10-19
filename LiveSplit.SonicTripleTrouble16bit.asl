@@ -1,7 +1,7 @@
 // Sonic Triple Trouble 16-Bit
 // Autosplitter
 // Coding: Jujstme
-// Version 1.0.1 (Aug 29th, 2022)
+// Version 1.0.2 (Oct 19th, 2022)
 
 state ("Sonic Triple Trouble 16-Bit") {}
 
@@ -30,6 +30,7 @@ startup
         { 9, 19 }, // Sonic & Tails' Credits
         { 0, 19 }, // Super Sonic ending
         { 1, 19 }, { 2, 19 }, // Knuckles' ending
+        { 69, 69 }, // Purple Palace (secret stage)
     };
 
     string[,] Settings =
@@ -46,13 +47,14 @@ startup
         { "9" , "Egg Zeppelin", null },
         { "10", "Robotnik Winter - Act 1", null },
         { "11", "Robotnik Winter - Act 2", null },
+        { "69", "Purple Palace", null },
         { "12", "Tidal Plant - Act 1", null },
         { "13", "Tidal Plant - Act 2", null },
         { "14", "Tidal Plant - Act 3", null },
         { "15", "Atomic Destroyer - Act 1", null },
         { "16", "Atomic Destroyer - Act 2", null },
         { "17", "Atomic Destroyer - Act 3", null },
-        { "18" , "Final Trouble (Sonic & Tails)", null }
+        { "18", "Final Trouble (Sonic & Tails)", null }
     };
     for (int i = 0; i < Settings.GetLength(0); i++) settings.Add(Settings[i, 0], true, Settings[i, 1], Settings[i, 2]);
 }
@@ -96,15 +98,13 @@ start
 
 split
 {
-    /* Sonic ending
-    if (settings["17"] && current.Act == 17 && vars.watchers["ChaosEmeralds"].Current == vars.watchers["ChaosEmeralds"].Old + 1 && vars.watchers["ChaosEmeralds"].Current != 7d)
-    {
-        return true;
-    }
-    */
-
     // Normal act completion splitting
-    if (current.Act == old.Act + 1 || (current.Act == 2 && old.Act == 0) || (current.Act == 19 && old.Act == 17))
+    if (
+        current.Act == old.Act + 1
+        || (old.Act == 11 && current.Act == 69) || (old.Act == 69 && current.Act == 12) // special case for Purple Palace
+        || (old.Act == 0 && current.Act == 2)   // Knuckles' transition from AIZ to Great Turquoise
+        || (current.Act == 19 && old.Act == 17) // Beat the Game ending
+       )
     {
         return settings[old.Act.ToString()];
     }
